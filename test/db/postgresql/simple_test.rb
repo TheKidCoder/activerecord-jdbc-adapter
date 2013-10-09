@@ -89,6 +89,30 @@ class PostgresSimpleTest < Test::Unit::TestCase
     connection.drop_table :testings rescue nil
   end
 
+  def test_create_table_with_array
+    connection.create_table :my_posts do |t|
+      t.string :name; t.text :description
+      t.string :tags, :array => true, :default => []
+      t.timestamps
+    end
+
+    columns = connection.columns(:my_posts)
+    tags = columns.detect { |c| c.name == "tags" }
+
+    if ar_version('4.0')
+      assert_equal :string, tags.type
+      assert_true tags.array?
+
+      name = columns.detect { |c| c.name == "name" }
+      assert_false name.array?
+    else
+      assert_equal :string, tags.type
+      assert_match /char/, tags.sql_type # character varying (255)
+    end
+  ensure
+    connection.drop_table :my_posts rescue nil
+  end
+
   def test_resolves_correct_columns_default
     assert column = DbType.columns.find { |col| col.name == 'sample_small_decimal' }
     assert_equal 3.14, column.default
@@ -159,6 +183,19 @@ class PostgresSimpleTest < Test::Unit::TestCase
       assert_empty connection.extensions
     end
   end
+
+  test "config :timeout is set as socket timeout" do
+    jdbc_connection = ActiveRecord::Base.connection.jdbc_connection
+    unless jdbc_connection.is_a?(Java::OrgPostgresqlCore::BaseConnection)
+      jdbc_connection = jdbc_connection.unwrap(Java::JavaSql::Connection.java_class)
+    end
+
+    jdbc_connection.class.class_eval { field_reader :protoConnection }
+    jdbc_connection.protoConnection.class.class_eval { field_reader :pgStream }
+
+    timeout = jdbc_connection.protoConnection.pgStream.getSocket.getSoTimeout
+    assert_equal 10 * 1000, timeout
+  end if defined? JRUBY_VERSION
 
 end
 

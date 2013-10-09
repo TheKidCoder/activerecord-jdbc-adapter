@@ -195,6 +195,7 @@ module SimpleTestMethods
   def test_table_exists?
     assert_true  ActiveRecord::Base.connection.table_exists? 'entries'
     assert_false ActiveRecord::Base.connection.table_exists? 'blahbls'
+    assert ! ActiveRecord::Base.connection.table_exists?(nil)
   end
 
   def test_entries_empty
@@ -1164,6 +1165,7 @@ module SimpleTestMethods
       when 'id' then assert_not_nil row[i]
       when 'title' then assert_equal 'title 1', row[i]
       when 'content' then assert_equal 'content 1', row[i]
+      when 'status' then assert_equal 'unknown', row[i]
       when 'user_id'
         if defined? JRUBY_VERSION
           assert_equal user.id, row[i]
@@ -1182,6 +1184,7 @@ module SimpleTestMethods
       when 'id' then assert_not_nil row[i]
       when 'title' then assert_equal 'title 2', row[i]
       when 'content' then assert_equal 'content 2', row[i]
+      when 'status' then assert_equal 'unknown', row[i]
       when 'user_id'
         if defined? JRUBY_VERSION
           assert_equal user.id, row[i]
